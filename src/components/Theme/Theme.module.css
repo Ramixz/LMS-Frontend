@@ -1,0 +1,23 @@
+.tab {
+    font-weight: 500;
+    transition: all;
+    transition-duration: 500ms;
+    color: var(--mantine-color-surfaceGrey-5);
+  
+    &[data-active] {
+      background-color: var(--mantine-color-secondary-5);
+      border-color: var(--mantine-color-white);
+      color: var(--mantine-color-primary-8);
+    }
+  }
+  .list::before {
+    background-color: var(--mantine-color-secondary-5);
+    border-width: 1.5x;
+    border-color: var(--mantine-color-secondary-5);
+  }
+  .card {
+    :hover {
+      background-color: "black";
+    }
+  }
+   
