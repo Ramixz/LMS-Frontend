@@ -55,4 +55,4 @@ export const connectorAPI = createApi({
   
 });
 
-export const { useGetConnectorByIdQuery , useLazyGetConnectorsQuery , useGetFieldsOfConnectorsQuery, useLazyGetConnectorListQuery} = connectorAPI;
+export const { useGetConnectorByIdQuery , useLazyGetConnectorsQuery , useGetFieldsOfConnectorsQuery, useLazyGetConnectorListQuery, useLazyGetRawtableDataQuery} = connectorAPI;

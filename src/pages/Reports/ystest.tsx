@@ -137,7 +137,7 @@ export default function Leads() {
             shadow="sm"
             radius="md"
             p="lg"
-            sx={(theme) => ({
+            style={(theme) => ({
               flex: `1 1 calc(50% - ${theme.spacing.lg})`,
               minWidth: rem(240),
             })}
