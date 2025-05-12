@@ -1,13 +1,278 @@
 // Leads.tsx
 import DataTable from "../../components/DataTable";
 import Page from "../../components/Layout/Page";
-import { ActionIcon, Box, Button, Divider, Group, Text, Tabs, Card, Badge, rem, Stack } from "@mantine/core";
+import { ActionIcon, Box, Button, Divider, Group, Text, Card, Badge, rem, Stack, Flex, Select } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { showNotification } from "@mantine/notifications";
-import { IconPlus, IconDownload, IconList, IconInfoCircle, IconPencil, IconTrash, IconCalendar, IconCurrencyDollar ,IconPercentage} from "@tabler/icons-react";
-import { LeadForm } from "./form";
+import { IconPlus, IconDownload, IconList, IconInfoCircle, IconPencil, IconTrash, IconCalendar, IconCurrencyDollar, IconPercentage, IconCheck, IconPointFilled } from "@tabler/icons-react";
+import { useCreateLeadMutation, useDeleteLeadMutation, useUpdateLeadMutation, useLazyGetAllLeadsQuery } from "../../services/estest.api";
+import { useState } from "react";
+import { Stepper, TextInput, PasswordInput, Code } from "@mantine/core";
+import { useForm } from "@mantine/form";
 import { toLocalFormattedDate } from "../../lib/helpers";
-import { useCreateLeadMutation, useDeleteLeadMutation, useUpdateLeadMutation ,useLazyGetAllLeadsQuery} from "../../services/estest.api";
+
+interface LeadFormProps {
+    lead?: any;
+    isEditing?: boolean;
+    onSubmit: (values: any) => void;
+}
+
+function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
+    const [active, setActive] = useState(0);
+    const [aadhaarVerified, setAadhaarVerified] = useState(false);
+    const [panVerified, setPanVerified] = useState(false);
+
+    const form = useForm({
+        initialValues: {
+            last_name: lead?.last_name || "",
+            contact: lead?.contact || "",
+            email: lead?.email || "",
+            aadhaar_no: lead?.aadhaar_no || "",
+            pan_no: lead?.pan_no || "",
+            city_name: lead?.city_name || "",
+            type: lead?.type || "",
+            make: lead?.make || "",
+            model: lead?.model || "",
+        },
+        validate: {
+            email: (value) => (/^\S+@\S+$/.test(value) ? null : "Invalid email"),
+            contact: (value) => (value.length === 10 ? null : "Must be 10 digits"),
+            last_name: (value) => (value.length > 0 ? null : "Last name is required"),
+        },
+    });
+
+    const nextStep = () =>
+        setActive((current) => {
+            if (form.validate().hasErrors) {
+                return current;
+            }
+            return current < 3 ? current + 1 : current;
+        });
+
+    const prevStep = () => setActive((current) => (current > 0 ? current - 1 : current));
+
+    const verifyAadhaar = () => {
+        const aadhaar = form.values.aadhaar_no;
+        if (/^\d{12}$/.test(aadhaar)) {
+            setAadhaarVerified(true);
+            return true;
+        }
+        setAadhaarVerified(false);
+        form.setFieldError('aadhaar_no', 'Aadhaar must be 12 digits');
+        return false;
+    };
+
+    const verifyPan = () => {
+        const pan = form.values.pan_no;
+        if (/^[A-Z]{5}\d{4}[A-Z]{1}$/.test(pan)) {
+            setPanVerified(true);
+            return true;
+        }
+        setPanVerified(false);
+        form.setFieldError('pan_no', 'PAN must be in format ABCDE1234F');
+        return false;
+    };
+
+    const handleAadhaarChange = (value: string, index: number) => {
+        const newAadhaar = form.values.aadhaar_no.split("");
+        newAadhaar[index] = value;
+        form.setFieldValue("aadhaar_no", newAadhaar.join(""));
+        setAadhaarVerified(false);
+
+        if (value && index < 11) {
+            const nextInput = document.getElementById(`aadhaar-${index + 1}`);
+            if (nextInput) nextInput.focus();
+        }
+    };
+
+    return (
+        <Box>
+            <Stepper
+                active={active}
+                onStepClick={setActive}
+                allowNextStepsSelect={false}
+                breakpoint="sm"
+            >
+                <Stepper.Step label="First step" description="Basic information">
+                    <Stack spacing="md">
+                        <TextInput
+                            label="Last Name"
+                            placeholder="Enter last name"
+                            required
+                            {...form.getInputProps("last_name")}
+                        />
+                        <TextInput
+                            label="Contact Number"
+                            placeholder="Enter contact number"
+                            required
+                            type="tel"
+                            {...form.getInputProps("contact")}
+                        />
+                        <TextInput
+                            label="Email"
+                            placeholder="Enter email"
+                            required
+                            {...form.getInputProps("email")}
+                        />
+                        <TextInput
+                            label="City"
+                            placeholder="Enter city"
+                            {...form.getInputProps("city_name")}
+                        />
+                        <Select
+                            label="Type"
+                            placeholder="Select loan type"
+                            data={[{ value: 'Car Loan', label: 'Car Loan' }]}
+                            {...form.getInputProps("type")}
+                        />
+                        <TextInput
+                            label="Make"
+                            placeholder="Enter vehicle make"
+                            {...form.getInputProps("make")}
+                        />
+                        <TextInput
+                            label="Model"
+                            placeholder="Enter vehicle model"
+                            {...form.getInputProps("model")}
+                        />
+                    </Stack>
+                </Stepper.Step>
+
+                <Stepper.Step label="Second step" description="Aadhaar verification">
+                    <Stack spacing="md">
+                        <Text size="sm" weight={500}>
+                            Aadhaar Number
+                        </Text>
+                        <Group spacing={5}>
+                            {Array.from({ length: 12 }).map((_, index) => (
+                                <TextInput
+                                    key={index}
+                                    id={`aadhaar-${index}`}
+                                    style={{ width: rem(40), position: 'relative' }}
+                                    maxLength={1}
+                                    value={form.values.aadhaar_no[index] ? " " : ""}
+                                    onChange={(e) => {
+                                        const value = e.target.value.replace(/\D/g, '');
+                                        if (value) handleAadhaarChange(value, index);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Backspace" && !form.values.aadhaar_no[index] && index > 0) {
+                                            document.getElementById(`aadhaar-${index - 1}`)?.focus();
+                                        }
+                                    }}
+                                    styles={{
+                                        input: {
+                                            textAlign: 'center',
+                                            paddingLeft: rem(12),
+                                            letterSpacing: rem(4),
+                                            height: rem(40),
+                                        },
+                                    }}
+                                    rightSection={
+                                        form.values.aadhaar_no[index] && (
+                                            <IconPointFilled
+                                                size={16}
+                                                style={{
+                                                    position: 'absolute',
+                                                    left: '50%',
+                                                    transform: 'translateX(-50%)',
+                                                    pointerEvents: 'none'
+                                                }}
+                                            />
+                                        )
+                                    }
+                                />
+                            ))}
+                        </Group>
+                        <Button
+                            onClick={verifyAadhaar}
+                            leftIcon={aadhaarVerified ? <IconCheck /> : null}
+                            variant={aadhaarVerified ? "light" : "filled"}
+                            color={aadhaarVerified ? "teal" : "blue"}
+                        >
+                            {aadhaarVerified ? "Aadhaar Verified" : "Verify Aadhaar"}
+                        </Button>
+                        {form.errors.aadhaar_no && (
+                            <Text size="sm" color="red">
+                                {form.errors.aadhaar_no}
+                            </Text>
+                        )}
+                    </Stack>
+                </Stepper.Step>
+
+                <Stepper.Step label="Final step" description="PAN verification">
+                    <Stack spacing="md">
+                        <TextInput
+                            label="PAN Number"
+                            placeholder="Enter PAN number"
+                            description="Format: ABCDE1234F"
+                            {...form.getInputProps("pan_no")}
+                        />
+                        <Button
+                            onClick={verifyPan}
+                            leftIcon={panVerified ? <IconCheck /> : null}
+                            variant={panVerified ? "light" : "filled"}
+                            color={panVerified ? "teal" : "blue"}
+                        >
+                            {panVerified ? "PAN Verified" : "Verify PAN"}
+                        </Button>
+                        {form.errors.pan_no && (
+                            <Text size="sm" color="red">
+                                {form.errors.pan_no}
+                            </Text>
+                        )}
+                    </Stack>
+                </Stepper.Step>
+
+                <Stepper.Completed>
+                    <Box>
+                        <Text size="lg" weight={500} mb="md">
+                            Review your information
+                        </Text>
+                        <Code block>
+                            {JSON.stringify(
+                                {
+                                    last_name: form.values.last_name,
+                                    contact: form.values.contact,
+                                    email: form.values.email,
+                                    city_name: form.values.city_name,
+                                    type: form.values.type,
+                                    make: form.values.make,
+                                    model: form.values.model,
+                                    aadhaar_no: `${form.values.aadhaar_no.substring(0, 4)} XXXXXX ${form.values.aadhaar_no.substring(8)}`,
+                                    pan_no: form.values.pan_no,
+                                },
+                                null,
+                                2
+                            )}
+                        </Code>
+                    </Box>
+                </Stepper.Completed>
+            </Stepper>
+
+            <Group position="right" mt="xl">
+                {active !== 0 && (
+                    <Button variant="default" onClick={prevStep}>
+                        Back
+                    </Button>
+                )}
+                {active !== 3 && (
+                    <Button onClick={nextStep} disabled={active === 1 && !aadhaarVerified}>
+                        Next step
+                    </Button>
+                )}
+                {active === 3 && (
+                    <Button
+                        onClick={() => onSubmit(form.values)}
+                        disabled={!aadhaarVerified || !panVerified}
+                    >
+                        {isEditing ? "Update Lead" : "Create Lead"}
+                    </Button>
+                )}
+            </Group>
+        </Box>
+    );
+}
 
 export default function Leads() {
     const [getLeads, { data, isFetching, isLoading, isError }] = useLazyGetAllLeadsQuery();
@@ -38,6 +303,7 @@ export default function Leads() {
             ),
             centered: true,
             shadow: "0px",
+            size: "xl",
             children: (
                 <>
                     <Divider mt={0} mb="xs" />
@@ -88,6 +354,7 @@ export default function Leads() {
             ),
             centered: true,
             shadow: "0px",
+            size: "xl",
             children: (
                 <LeadForm
                     lead={lead}
@@ -113,108 +380,72 @@ export default function Leads() {
             ),
         });
     };
+
     const handleShowLoanOffers = (lead: any) => {
-  // pretend lead.offers is an array of offers; you can replace this with your real data
-  const offers = lead.offers ?? [
-    { amount: 50000, rate: 5.5, term: 36 },
-    { amount: 75000, rate: 6.0, term: 60 },
-  ];
+        const offers = lead.offers ?? [
+            { amount: 50000, rate: 5.5, term: 36 },
+            { amount: 75000, rate: 6.0, term: 60 },
+        ];
 
-  modals.open({
-    title: (
-      <Group >
-        <IconInfoCircle size={24} />
-        <Text>Loan Offers for {lead.last_name}</Text>
-      </Group>
-    ),
-    size: 'xl',
-    children: (
-      <Group grow align="stretch" mt="md" >
-        {offers.map((offer, idx) => (
-          <Card
-            key={idx}
-            withBorder
-            shadow="sm"
-            radius="md"
-            p="lg"
-            style={(theme) => ({
-              flex: `1 1 calc(50% - ${theme.spacing.lg})`,
-              minWidth: rem(240),
-            })}
-          >
-            <Group  mb="sm">
-              <Text  size="lg">{`Offer ${idx + 1}`}</Text>
-              <Badge color="blue" variant="light">{`${offer.rate}% APR`}</Badge>
-            </Group>
+        modals.open({
+            title: (
+                <Group >
+                    <IconInfoCircle size={24} />
+                    <Text>Loan Offers for {lead.last_name}</Text>
+                </Group>
+            ),
+            size: 'xl',
+            children: (
+                <Group grow align="stretch" mt="md" >
+                    {offers.map((offer, idx) => (
+                        <Card
+                            key={idx}
+                            withBorder
+                            shadow="sm"
+                            radius="md"
+                            p="lg"
+                            style={(theme) => ({
+                                flex: `1 1 calc(50% - ${theme.spacing.lg})`,
+                                minWidth: rem(240),
+                            })}
+                        >
+                            <Group mb="sm">
+                                <Text size="lg">{`Offer ${idx + 1}`}</Text>
+                                <Badge color="blue" variant="light">{`${offer.rate}% APR`}</Badge>
+                            </Group>
 
-            <Stack >
-              <Group >
-                <IconCurrencyDollar size={18} />
-                <Text size="sm">
-                  Amount: <Text component="span">${offer.amount.toLocaleString()}</Text>
-                </Text>
-              </Group>
+                            <Stack >
+                                <Group >
+                                    <IconCurrencyDollar size={18} />
+                                    <Text size="sm">
+                                        Amount: <Text component="span">${offer.amount.toLocaleString()}</Text>
+                                    </Text>
+                                </Group>
 
-              <Group >
-                <IconPercentage size={18} />
-                <Text size="sm">
-                  Interest Rate: <Text component="span" >{offer.rate}%</Text>
-                </Text>
-              </Group>
+                                <Group >
+                                    <IconPercentage size={18} />
+                                    <Text size="sm">
+                                        Interest Rate: <Text component="span" >{offer.rate}%</Text>
+                                    </Text>
+                                </Group>
 
-              <Group >
-                <IconCalendar size={18} />
-                <Text size="sm">
-                  Term: <Text component="span">{offer.term} months</Text>
-                </Text>
-              </Group>
-            </Stack>
+                                <Group >
+                                    <IconCalendar size={18} />
+                                    <Text size="sm">
+                                        Term: <Text component="span">{offer.term} months</Text>
+                                    </Text>
+                                </Group>
+                            </Stack>
 
-            {/* optionally add a footer with actions */}
-            <Group  mt="md">
-              <Button size="xs" variant="light">Apply now</Button>
-            </Group>
-          </Card>
-        ))}
-      </Group>
-    ),
-  });
-};
-    // const handleShowLoanOffers = (lead: any) => {
-    //     modals.open({
-    //         title: (
-    //             <Group>
-    //                 <IconInfoCircle size={24} />
-    //                 <Text>Loan Offers for {lead.last_name}</Text>
-    //             </Group>
-    //         ),
-    //         size: "xl",
-    //         children: (
-    //             <Tabs defaultValue="offer1">
-    //                 <Tabs.List>
-    //                     <Tabs.Tab value="offer1">Offer 1</Tabs.Tab>
-    //                     <Tabs.Tab value="offer2">Offer 2</Tabs.Tab>
-    //                 </Tabs.List>
-
-    //                 <Tabs.Panel value="offer1" pt="xs">
-    //                     <div>
-    //                         <Text size="sm">Loan Amount: $50,000</Text>
-    //                         <Text size="sm">Interest Rate: 5.5%</Text>
-    //                         <Text size="sm">Term: 36 months</Text>
-    //                     </div>
-    //                 </Tabs.Panel>
-
-    //                 <Tabs.Panel value="offer2" pt="xs">
-    //                     <div>
-    //                         <Text size="sm">Loan Amount: $75,000</Text>
-    //                         <Text size="sm">Interest Rate: 6.0%</Text>
-    //                         <Text size="sm">Term: 60 months</Text>
-    //                     </div>
-    //                 </Tabs.Panel>
-    //             </Tabs>
-    //         )
-    //     });
-    // };
+                            <Group mt="md">
+                                <Button size="xs" variant="light">Apply now</Button>
+                            </Group>
+                        </Card>
+                    ))}
+                </Group>
+            ),
+        });
+    };
 
     return (
         <Page pageTitle="Leads" bgWhite>
@@ -237,17 +468,54 @@ export default function Leads() {
             <DataTable
                 totalRowCount={data?.total_items ?? 0}
                 columns={[
-                    { header: "Aadhaar", accessorKey: "aadhaar_no" },
-                    { header: "PAN", accessorKey: "pan_no" },
-                    { header: "Last Name", accessorKey: "last_name" },
-                    { header: "Email", accessorKey: "email" },
-                    { header: "Contact", accessorKey: "contact" },
-                   
+                    { header: "Email", accessorKey: "email", size: 120 },
+                    { header: "Last Name", accessorKey: "last_name", size: 120 },
+                    { header: "Contact", accessorKey: "contact", size: 120 },
+                    { header: "City", accessorKey: "city_name", size: 100 },
+                    { header: "Type", accessorKey: "type", size: 100 },
+                    { header: "Make", accessorKey: "make", size: 100 },
+                    { header: "Model", accessorKey: "model", size: 100 },
+                    {
+                        header: "PAN",
+                        accessorFn: (row: any) => {
+                            const pan = row.pan_no;
+                            if (!pan) return null;
+                            return `${pan.substring(0, 5)}XXXX${pan.charAt(9)}`;
+                        },
+                        size: 100
+                    },
+                    {
+                        header: "Aadhaar",
+                        accessorFn: (row: any) => {
+                            const aadhaar = row.aadhaar_no;
+                            if (!aadhaar) return null;
+                            return `XXXX XXXX ${aadhaar.substring(8)}`;
+                        },
+                        size: 140
+                    },
+                    {
+                        header: "Created By",
+                        accessorKey: "created_by",
+                        size: 120
+                    },
+                    {
+                        header: "CREATED DATE",
+                        accessorFn: (row) => {
+                            const { date, time } = toLocalFormattedDate(row.created_at);
+                            return (
+                                <div>
+                                    <div>{date},</div>
+                                    <div>{time}</div>
+                                </div>
+                            );
+                        },
+                        size: 140
+                    },
                 ]}
                 data={data?.data ?? []}
                 {...{ isFetching, isLoading, isError }}
                 renderRowActions={({ row }: any) => (
-                    <Group gap="md">
+                    <Flex gap="md" noWrap>
                         <ActionIcon
                             variant="subtle"
                             size="sm"
@@ -277,17 +545,17 @@ export default function Leads() {
                         >
                             <IconTrash size="xxl" stroke={1.5} />
                         </ActionIcon>
-                    </Group>
+                    </Flex>
                 )}
                 onStateChange={({ pagination }: any) => {
                     getLeads({
                         params: {
-                          page: pagination.pageIndex,
-                          per_page: pagination.pageSize,
-                          sort: 'createdOn',
-                          order: 'desc'
+                            page: pagination.pageIndex,
+                            per_page: pagination.pageSize,
+                            sort: 'createdOn',
+                            order: 'desc'
                         }
-                      });
+                    });
                 }}
                 enableRowActions
             />
