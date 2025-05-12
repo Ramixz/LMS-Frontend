@@ -1,7 +1,5 @@
 {
-    "buildCommand": "pnpm build",
-    "installCommand": "pnpm install",
-    "outputDirectory": "dist",
-    "ignoreCommand": "exit 0"
-  }
-  
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install",
+  "outputDirectory": "dist"
+}
