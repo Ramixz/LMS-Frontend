@@ -4,12 +4,13 @@ import Page from "../../components/Layout/Page";
 import { ActionIcon, Box, Button, Divider, Group, Text, Card, Badge, rem, Stack, Flex, Select } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { showNotification } from "@mantine/notifications";
-import { IconPlus, IconDownload, IconList, IconInfoCircle, IconPencil, IconTrash, IconCalendar, IconCurrencyDollar, IconPercentage, IconCheck, IconPointFilled } from "@tabler/icons-react";
+import { IconPlus, IconDownload, IconList, IconInfoCircle, IconPencil, IconTrash, IconCalendar, IconCurrencyDollar, IconPercentage, IconCheck, IconPointFilled, IconLogout } from "@tabler/icons-react";
 import { useCreateLeadMutation, useDeleteLeadMutation, useUpdateLeadMutation, useLazyGetAllLeadsQuery } from "../../services/estest.api";
 import { useState } from "react";
 import { Stepper, TextInput, PasswordInput, Code } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { toLocalFormattedDate } from "../../lib/helpers";
+import { useNavigate } from "react-router-dom";
 
 interface LeadFormProps {
     lead?: any;
@@ -121,6 +122,8 @@ function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
                             placeholder="Enter loan amount"
                             type="number"
                             {...form.getInputProps("loan_amount")}
+                            onWheel={(e) => e.currentTarget.blur()}
+                            
                         />
                         <TextInput
                             label="Location"
@@ -279,7 +282,6 @@ function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
                         </Stack>
                     </Box>
                 </Stepper.Completed>
-
             </Stepper>
 
             <Group position="right" mt="xl">
@@ -307,10 +309,16 @@ function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
 }
 
 export default function Leads() {
+    const navigate = useNavigate();
     const [getLeads, { data, isFetching, isLoading, isError }] = useLazyGetAllLeadsQuery();
     const [createLead] = useCreateLeadMutation();
     const [deleteLead] = useDeleteLeadMutation();
     const [updateLead] = useUpdateLeadMutation();
+
+    const handleLogout = () => {
+        // Clear any authentication tokens or user data here
+        navigate('/login'); // Redirect to login page
+    };
 
     const handleAddLead = () => {
         modals.open({
@@ -483,18 +491,29 @@ export default function Leads() {
         <Page pageTitle="Leads" bgWhite>
             <Divider my="sm" size={"sm"} />
             <Group justify="end" mb="md" pr={"xxs"}>
-                <Button
-                    leftSection={<IconPlus size={20} />}
-                    onClick={handleAddLead}
-                >
-                    Lead
-                </Button>
-                <Button leftSection={<IconDownload size={20} />} variant="outline">
-                    Download
-                </Button>
-                <Button leftSection={<IconList size={20} />} variant="outline">
-                    View
-                </Button>
+
+                <Group>
+                    <Button
+                        leftSection={<IconPlus size={20} />}
+                        onClick={handleAddLead}
+                    >
+                        Lead
+                    </Button>
+                    <Button leftSection={<IconDownload size={20} />} variant="outline">
+                        Download
+                    </Button>
+                    <Button leftSection={<IconList size={20} />} variant="outline">
+                        View
+                    </Button>
+                    <Button
+                        leftSection={<IconLogout size={20} />}
+                        variant="outline"
+                        color="red"
+                        onClick={handleLogout}
+                    >
+                        Logout
+                    </Button>
+                </Group>
             </Group>
 
             <DataTable
