@@ -27,6 +27,7 @@ function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
             last_name: lead?.last_name || "",
             contact: lead?.contact || "",
             email: lead?.email || "",
+            loan_amount: lead?.loan_amount || "",
             aadhaar_no: lead?.aadhaar_no || "",
             pan_no: lead?.pan_no || "",
             city_name: lead?.city_name || "",
@@ -38,6 +39,7 @@ function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
             email: (value) => (/^\S+@\S+$/.test(value) ? null : "Invalid email"),
             contact: (value) => (value.length === 10 ? null : "Must be 10 digits"),
             last_name: (value) => (value.length > 0 ? null : "Last name is required"),
+            loan_amount: (value) => (value && !isNaN(Number(value)) ? null : "Must be a valid number"),
         },
     });
 
@@ -96,8 +98,8 @@ function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
                 <Stepper.Step label="First step" description="Basic information">
                     <Stack spacing="md">
                         <TextInput
-                            label="Last Name"
-                            placeholder="Enter last name"
+                            label="Name"
+                            placeholder="Enter name"
                             required
                             {...form.getInputProps("last_name")}
                         />
@@ -115,8 +117,14 @@ function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
                             {...form.getInputProps("email")}
                         />
                         <TextInput
-                            label="City"
-                            placeholder="Enter city"
+                            label="Loan Amount (₹)"
+                            placeholder="Enter loan amount"
+                            type="number"
+                            {...form.getInputProps("loan_amount")}
+                        />
+                        <TextInput
+                            label="Location"
+                            placeholder="Enter location"
                             {...form.getInputProps("city_name")}
                         />
                         <Select
@@ -226,28 +234,52 @@ function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
 
                 <Stepper.Completed>
                     <Box>
-                        <Text size="lg" weight={500} mb="md">
-                            Review your information
-                        </Text>
-                        <Code block>
-                            {JSON.stringify(
-                                {
-                                    last_name: form.values.last_name,
-                                    contact: form.values.contact,
-                                    email: form.values.email,
-                                    city_name: form.values.city_name,
-                                    type: form.values.type,
-                                    make: form.values.make,
-                                    model: form.values.model,
-                                    aadhaar_no: `${form.values.aadhaar_no.substring(0, 4)} XXXXXX ${form.values.aadhaar_no.substring(8)}`,
-                                    pan_no: form.values.pan_no,
-                                },
-                                null,
-                                2
-                            )}
-                        </Code>
+                        <Text size="lg" fw={600} mb="md">Review Your Details</Text>
+                        <Stack spacing="sm">
+                            <Group>
+                                <Text fw={500}>Name:</Text>
+                                <Text>{form.values.last_name}</Text>
+                            </Group>
+                            <Group>
+                                <Text fw={500}>Contact:</Text>
+                                <Text>{form.values.contact}</Text>
+                            </Group>
+                            <Group>
+                                <Text fw={500}>Email:</Text>
+                                <Text>{form.values.email}</Text>
+                            </Group>
+                            <Group>
+                                <Text fw={500}>Loan Amount:</Text>
+                                <Text>₹{Number(form.values.loan_amount).toLocaleString()}</Text>
+                            </Group>
+                            <Group>
+                                <Text fw={500}>Location:</Text>
+                                <Text>{form.values.city_name}</Text>
+                            </Group>
+                            <Group>
+                                <Text fw={500}>Type:</Text>
+                                <Text>{form.values.type}</Text>
+                            </Group>
+                            <Group>
+                                <Text fw={500}>Make:</Text>
+                                <Text>{form.values.make}</Text>
+                            </Group>
+                            <Group>
+                                <Text fw={500}>Model:</Text>
+                                <Text>{form.values.model}</Text>
+                            </Group>
+                            <Group>
+                                <Text fw={500}>Aadhaar:</Text>
+                                <Text>XXXX XXXX {form.values.aadhaar_no.substring(8)}</Text>
+                            </Group>
+                            <Group>
+                                <Text fw={500}>PAN:</Text>
+                                <Text>{form.values.pan_no}</Text>
+                            </Group>
+                        </Stack>
                     </Box>
                 </Stepper.Completed>
+
             </Stepper>
 
             <Group position="right" mt="xl">
@@ -418,7 +450,7 @@ export default function Leads() {
                                 <Group >
                                     <IconCurrencyDollar size={18} />
                                     <Text size="sm">
-                                        Amount: <Text component="span">${offer.amount.toLocaleString()}</Text>
+                                        Amount: <Text component="span">₹{offer.amount.toLocaleString()}</Text>
                                     </Text>
                                 </Group>
 
@@ -468,10 +500,16 @@ export default function Leads() {
             <DataTable
                 totalRowCount={data?.total_items ?? 0}
                 columns={[
+                    { header: "Lead Number", accessorKey: "lead_id", size: 120 },
                     { header: "Email", accessorKey: "email", size: 120 },
-                    { header: "Last Name", accessorKey: "last_name", size: 120 },
+                    { header: "Name", accessorKey: "last_name", size: 120 },
                     { header: "Contact", accessorKey: "contact", size: 120 },
-                    { header: "City", accessorKey: "city_name", size: 100 },
+                    {
+                        header: "Loan Amount",
+                        accessorFn: (row: any) => row.loan_amount ? `₹${Number(row.loan_amount).toLocaleString()}` : '-',
+                        size: 120
+                    },
+                    { header: "Location", accessorKey: "city_name", size: 100 },
                     { header: "Type", accessorKey: "type", size: 100 },
                     { header: "Make", accessorKey: "make", size: 100 },
                     { header: "Model", accessorKey: "model", size: 100 },
