@@ -538,7 +538,7 @@ export default function Leads() {
     };
 
     return (
-        <Page pageTitle="Leads" bgWhite>
+        <Page pageTitle="ORCA" bgWhite>
             <Divider my="sm" size={"sm"} />
             <Group justify="end" mb="md" pr={"xxs"}>
 
@@ -551,9 +551,6 @@ export default function Leads() {
                     </Button>
                     <Button leftSection={<IconDownload size={20} />} variant="outline">
                         Download
-                    </Button>
-                    <Button leftSection={<IconList size={20} />} variant="outline">
-                        View
                     </Button>
                     <Button
                         leftSection={<IconLogout size={20} />}
