@@ -6,7 +6,7 @@ import { modals } from "@mantine/modals";
 import { showNotification } from "@mantine/notifications";
 import { IconPlus, IconDownload, IconList, IconInfoCircle, IconPencil, IconTrash, IconCalendar, IconCurrencyDollar, IconPercentage, IconCheck, IconPointFilled, IconLogout } from "@tabler/icons-react";
 import { useCreateLeadMutation, useDeleteLeadMutation, useUpdateLeadMutation, useLazyGetAllLeadsQuery } from "../../services/estest.api";
-import { useState } from "react";
+import { useState, startTransition } from "react";
 import { Stepper, TextInput, PasswordInput, Code } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { toLocalFormattedDate } from "../../lib/helpers";
@@ -364,6 +364,8 @@ export default function Leads() {
     const [updateLead] = useUpdateLeadMutation();
 
     const handleLogout = () => {
+        localStorage.removeItem("access_token");
+        sessionStorage.removeItem("access_token");
         // Clear any authentication tokens or user data here
         navigate('/login'); // Redirect to login page
     };
@@ -656,15 +658,18 @@ export default function Leads() {
                     </Flex>
                 )}
                 onStateChange={({ pagination }: any) => {
-                    getLeads({
-                        params: {
-                            page: pagination.pageIndex,
-                            per_page: pagination.pageSize,
-                            sort: 'createdOn',
-                            order: 'desc'
-                        }
+                    startTransition(() => {
+                        getLeads({
+                            params: {
+                                page: pagination.pageIndex,
+                                per_page: pagination.pageSize,
+                                sort: 'createdOn',
+                                order: 'desc'
+                            }
+                        });
                     });
                 }}
+
                 enableRowActions
             />
         </Page>
