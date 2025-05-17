@@ -25,7 +25,10 @@ function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
 
     const form = useForm({
         initialValues: {
+            first_name: lead?.first_name || "",
             last_name: lead?.last_name || "",
+            gender: lead?.gender || "",
+            branch_code: lead?.branch_code || "",
             contact: lead?.contact || "",
             email: lead?.email || "",
             loan_amount: lead?.loan_amount || "",
@@ -37,10 +40,13 @@ function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
             model: lead?.model || "",
         },
         validate: {
+            first_name: (value) => (value.length > 0 ? null : "First name is required"),
             email: (value) => (/^\S+@\S+$/.test(value) ? null : "Invalid email"),
             contact: (value) => (value.length === 10 ? null : "Must be 10 digits"),
             last_name: (value) => (value.length > 0 ? null : "Last name is required"),
             loan_amount: (value) => (value && !isNaN(Number(value)) ? null : "Must be a valid number"),
+            gender: (value) => (value.length > 0 ? null : "Gender is required"),
+            branch_code: (value) => (value.length > 0 ? null : "Branch code is required"),
         },
     });
 
@@ -98,12 +104,40 @@ function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
             >
                 <Stepper.Step label="First step" description="Basic information">
                     <Stack spacing="md">
-                        <TextInput
-                            label="Name"
-                            placeholder="Enter name"
-                            required
-                            {...form.getInputProps("last_name")}
-                        />
+                        <Group grow>
+                            <TextInput
+                                label="First Name"
+                                placeholder="Enter first name"
+                                required
+                                {...form.getInputProps("first_name")}
+                            />
+                            <TextInput
+                                label="Last Name"
+                                placeholder="Enter last name"
+                                required
+                                {...form.getInputProps("last_name")}
+                            />
+                        </Group>
+                        <Group grow>
+                            <Select
+                                label="Gender"
+                                placeholder="Select gender"
+                                required
+                                data={[
+                                    { value: 'Male', label: 'Male' },
+                                    { value: 'Female', label: 'Female' },
+                                    { value: 'Other', label: 'Other' }
+                                ]}
+                                {...form.getInputProps("gender")}
+                            />
+                            <TextInput
+                                label="Branch Code"
+                                placeholder="Enter branch code"
+                                required
+                                {...form.getInputProps("branch_code")}
+                            />
+                        </Group>
+
                         <TextInput
                             label="Contact Number"
                             placeholder="Enter contact number"
@@ -123,7 +157,7 @@ function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
                             type="number"
                             {...form.getInputProps("loan_amount")}
                             onWheel={(e) => e.currentTarget.blur()}
-                            
+
                         />
                         <TextInput
                             label="Location"
@@ -240,9 +274,23 @@ function LeadForm({ lead, isEditing, onSubmit }: LeadFormProps) {
                         <Text size="lg" fw={600} mb="md">Review Your Details</Text>
                         <Stack spacing="sm">
                             <Group>
-                                <Text fw={500}>Name:</Text>
+                                <Text fw={500}>First Name:</Text>
+                                <Text>{form.values.first_name}</Text>
+                            </Group>
+
+                            <Group>
+                                <Text fw={500}>Last Name:</Text>
                                 <Text>{form.values.last_name}</Text>
                             </Group>
+                            <Group>
+                                <Text fw={500}>Gender:</Text>
+                                <Text>{form.values.gender}</Text>
+                            </Group>
+                            <Group>
+                                <Text fw={500}>Branch Code:</Text>
+                                <Text>{form.values.branch_code}</Text>
+                            </Group>
+
                             <Group>
                                 <Text fw={500}>Contact:</Text>
                                 <Text>{form.values.contact}</Text>
@@ -521,7 +569,10 @@ export default function Leads() {
                 columns={[
                     { header: "Lead Number", accessorKey: "lead_id", size: 120 },
                     { header: "Email", accessorKey: "email", size: 120 },
-                    { header: "Name", accessorKey: "last_name", size: 120 },
+                    { header: "First Name", accessorKey: "first_name", size: 120 },
+                    { header: "Last Name", accessorKey: "last_name", size: 120 },
+                    { header: "Gender", accessorKey: "gender", size: 100 },
+                    { header: "Branch Code", accessorKey: "branch_code", size: 100 },
                     { header: "Contact", accessorKey: "contact", size: 120 },
                     {
                         header: "Loan Amount",
